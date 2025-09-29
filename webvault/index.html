@@ -1,0 +1,2064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Vault - Secure Client-Side Storage</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-primary: #121212;
+            --bg-secondary: #1e1e1e;
+            --bg-tertiary: #2d2d2d;
+            --accent-primary: #bb86fc;
+            --accent-secondary: #03dac6;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --danger: #f44336;
+            --border-radius: 8px;
+            --transition: all 0.3s ease;
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #f5f5f5;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #e0e0e0;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: var(--transition);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            width: 100%;
+        }
+
+        /* Authentication View */
+        #authView {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--bg-primary), var(--bg-tertiary));
+        }
+
+        .auth-container {
+            background: var(--bg-secondary);
+            padding: 40px;
+            border-radius: var(--border-radius);
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .logo {
+            margin-bottom: 30px;
+            color: var(--accent-primary);
+        }
+
+        .logo i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .logo h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        .logo p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 14px;
+            background: var(--bg-tertiary);
+            border: 1px solid #333;
+            border-radius: var(--border-radius);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(187, 134, 252, 0.2);
+        }
+
+        .password-strength {
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .password-strength-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 14px 28px;
+            background: var(--accent-primary);
+            color: #000;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 100%;
+            text-align: center;
+        }
+
+        .btn:hover {
+            background: #9b5de5;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--accent-primary);
+            color: var(--accent-primary);
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(187, 134, 252, 0.1);
+        }
+
+        .security-note {
+            margin-top: 25px;
+            padding: 15px;
+            background: rgba(255, 152, 0, 0.1);
+            border-radius: var(--border-radius);
+            color: var(--warning);
+            font-size: 0.9rem;
+            text-align: left;
+        }
+
+        /* App View */
+        #appView {
+            display: none;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background: var(--bg-secondary);
+            padding: 15px 0;
+            border-bottom: 1px solid #333;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .app-logo {
+            font-size: 1.5rem;
+            color: var(--accent-primary);
+            margin-right: 20px;
+        }
+
+        .app-logo i {
+            margin-right: 8px;
+        }
+
+        .storage-info {
+            background: var(--bg-tertiary);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .storage-info span {
+            color: var(--accent-secondary);
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .header-btn {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: none;
+            border-radius: var(--border-radius);
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-btn:hover {
+            background: #333;
+        }
+
+        .header-btn.lock-btn {
+            background: rgba(187, 134, 252, 0.1);
+            color: var(--accent-primary);
+        }
+
+        .header-btn.lock-btn:hover {
+            background: rgba(187, 134, 252, 0.2);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 30px 0;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+            align-items: center;
+        }
+
+        .search-container {
+            position: relative;
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .search-container i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 20px 12px 45px;
+            background: var(--bg-secondary);
+            border: 1px solid #333;
+            border-radius: var(--border-radius);
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .filter-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .filter-select {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid #333;
+            border-radius: var(--border-radius);
+            padding: 12px;
+            min-width: 150px;
+        }
+
+        .upload-area {
+            border: 2px dashed #444;
+            border-radius: var(--border-radius);
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: var(--transition);
+            cursor: pointer;
+            background: var(--bg-secondary);
+        }
+
+        .upload-area:hover, .upload-area.drag-over {
+            border-color: var(--accent-primary);
+            background: rgba(187, 134, 252, 0.05);
+        }
+
+        .upload-area i {
+            font-size: 3rem;
+            color: var(--accent-primary);
+            margin-bottom: 15px;
+        }
+
+        .upload-area h3 {
+            margin-bottom: 10px;
+        }
+
+        .upload-area p {
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .upload-btn {
+            background: var(--accent-primary);
+            color: #000;
+            border: none;
+            border-radius: var(--border-radius);
+            padding: 12px 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .upload-btn:hover {
+            background: #9b5de5;
+        }
+
+        .progress-container {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background: #333;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* File List */
+        .file-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .file-card {
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            transition: var(--transition);
+            border: 1px solid #333;
+            position: relative;
+        }
+
+        .file-card:hover {
+            transform: translateY(-5px);
+            border-color: #444;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .file-card.selected {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(187, 134, 252, 0.3);
+        }
+
+        .file-checkbox {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 2;
+            width: 20px;
+            height: 20px;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .file-card:hover .file-checkbox,
+        .file-checkbox:checked {
+            opacity: 1;
+        }
+
+        .file-preview {
+            height: 180px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--bg-tertiary);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .file-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .file-preview i {
+            font-size: 3rem;
+            color: var(--accent-primary);
+        }
+
+        .file-tag {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+        }
+
+        .file-info {
+            padding: 20px;
+        }
+
+        .file-name {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-meta {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+        }
+
+        .file-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .file-action-btn {
+            flex: 1;
+            padding: 8px 10px;
+            border-radius: var(--border-radius);
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            font-size: 0.9rem;
+        }
+
+        .file-action-btn.preview {
+            background: rgba(3, 218, 198, 0.1);
+            color: var(--accent-secondary);
+        }
+
+        .file-action-btn.download {
+            background: rgba(76, 175, 80, 0.1);
+            color: var(--success);
+        }
+
+        .file-action-btn.delete {
+            background: rgba(244, 67, 54, 0.1);
+            color: var(--danger);
+        }
+
+        .file-action-btn:hover {
+            opacity: 0.8;
+        }
+
+        /* Bulk Actions */
+        .bulk-actions {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-secondary);
+            padding: 10px 20px;
+            border-radius: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            display: flex;
+            gap: 10px;
+            z-index: 90;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+        }
+
+        .bulk-actions.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            padding: 15px 25px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-left: 4px solid var(--accent-primary);
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast i {
+            font-size: 1.2rem;
+        }
+
+        .toast.success {
+            border-left-color: var(--success);
+        }
+
+        .toast.error {
+            border-left-color: var(--danger);
+        }
+
+        .toast.warning {
+            border-left-color: var(--warning);
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+        }
+
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            flex: 1;
+            padding: 20px;
+            overflow: auto;
+        }
+
+        .modal-preview {
+            max-width: 100%;
+            max-height: 60vh;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .modal-text {
+            white-space: pre-wrap;
+            background: var(--bg-tertiary);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            max-height: 300px;
+            overflow: auto;
+            font-family: monospace;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid #333;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* Settings Modal */
+        .settings-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .settings-group {
+            margin-bottom: 15px;
+        }
+
+        .settings-group h4 {
+            margin-bottom: 10px;
+            color: var(--accent-primary);
+        }
+
+        .settings-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .theme-toggle {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+
+        .theme-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .theme-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #333;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .theme-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .theme-slider {
+            background-color: var(--accent-primary);
+        }
+
+        input:checked + .theme-slider:before {
+            transform: translateX(30px);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filter-container {
+                width: 100%;
+            }
+            
+            .file-list {
+                grid-template-columns: repeat(auto-fill, minmax(100%, 1fr));
+            }
+            
+            .auth-container {
+                padding: 30px 20px;
+            }
+            
+            .header-container {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .storage-info {
+                order: 3;
+                width: 100%;
+                text-align: center;
+                margin-top: 10px;
+            }
+
+            .bulk-actions {
+                width: 90%;
+                justify-content: center;
+            }
+        }
+
+        /* Skeleton Loading */
+        .skeleton {
+            animation: skeleton-loading 1.5s linear infinite alternate;
+            opacity: 0.7;
+            border-radius: var(--border-radius);
+        }
+
+        @keyframes skeleton-loading {
+            0% {
+                background-color: var(--bg-tertiary);
+            }
+            100% {
+                background-color: var(--bg-secondary);
+            }
+        }
+
+        .skeleton-text {
+            width: 100%;
+            height: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .skeleton-text:last-child {
+            margin-bottom: 0;
+            width: 80%;
+        }
+    </style>
+</head>
+<body>
+    <!-- Authentication View -->
+    <section id="authView">
+        <div class="auth-container">
+            <div class="logo">
+                <i class="fas fa-lock"></i>
+                <h1>Private Vault</h1>
+                <p>Secure client-side file storage with encryption</p>
+            </div>
+            
+            <div class="form-group">
+                <label for="passwordInput">Enter your vault password</label>
+                <input type="password" id="passwordInput" class="form-control" placeholder="Your secure password" autocomplete="current-password">
+                <div class="password-strength">
+                    <div class="password-strength-fill" id="passwordStrength"></div>
+                </div>
+            </div>
+            
+            <button id="unlockButton" class="btn">
+                <i class="fas fa-lock-open"></i> Unlock Vault
+            </button>
+            
+            <div class="security-note">
+                <p><i class="fas fa-exclamation-triangle"></i> <strong>Important:</strong> Your password is never stored or transmitted. If you lose it, your files will be permanently inaccessible. All data is stored locally in your browser.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Application View -->
+    <section id="appView">
+        <header>
+            <div class="container header-container">
+                <div class="header-left">
+                    <div class="app-logo">
+                        <i class="fas fa-lock"></i> Private Vault
+                    </div>
+                    <div class="storage-info">
+                        <span id="storageStatus">0.0 MB used</span> of available storage
+                    </div>
+                </div>
+                
+                <div class="header-actions">
+                    <button id="settingsButton" class="header-btn" title="Settings">
+                        <i class="fas fa-cog"></i> Settings
+                    </button>
+                    <button id="backupButton" class="header-btn" title="Backup vault">
+                        <i class="fas fa-file-export"></i> Backup
+                    </button>
+                    <button id="restoreButton" class="header-btn" title="Restore from backup">
+                        <i class="fas fa-file-import"></i> Restore
+                    </button>
+                    <button id="lockButton" class="header-btn lock-btn" title="Lock vault">
+                        <i class="fas fa-lock"></i> Lock
+                    </button>
+                </div>
+            </div>
+        </header>
+        
+        <main class="main-content">
+            <div class="container">
+                <div class="toolbar">
+                    <div class="search-container">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" class="search-input" placeholder="Search files..." aria-label="Search files">
+                    </div>
+                    
+                    <div class="filter-container">
+                        <select id="sortSelect" class="filter-select" aria-label="Sort files by">
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="name">By Name (A-Z)</option>
+                            <option value="size">By Size</option>
+                        </select>
+                        <select id="filterSelect" class="filter-select" aria-label="Filter files by type">
+                            <option value="all">All Types</option>
+                            <option value="image">Images</option>
+                            <option value="document">Documents</option>
+                            <option value="archive">Archives</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="upload-area" id="dropZone" role="button" aria-label="Upload files area">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h3>Upload Files</h3>
+                    <p>Drag & drop files here or click to browse</p>
+                    <button class="upload-btn" id="uploadButton">
+                        <i class="fas fa-plus"></i> Select Files
+                    </button>
+                    <input type="file" id="fileInput" multiple style="display: none">
+                    
+                    <div class="progress-container" id="progressContainer">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-text" id="progressText">Uploading: 0%</div>
+                    </div>
+                </div>
+                
+                <div class="file-list" id="fileListContainer" role="list">
+                    <!-- File cards will be dynamically added here -->
+                </div>
+            </div>
+        </main>
+        
+        <!-- Bulk Actions -->
+        <div class="bulk-actions" id="bulkActions">
+            <span id="selectedCount">0 selected</span>
+            <button id="downloadSelected" class="header-btn">
+                <i class="fas fa-download"></i> Download
+            </button>
+            <button id="deleteSelected" class="header-btn" style="color: var(--danger)">
+                <i class="fas fa-trash"></i> Delete
+            </button>
+        </div>
+        
+        <!-- Toast Notification -->
+        <div class="toast" id="toast" role="alert">
+            <i class="fas fa-info-circle"></i>
+            <span id="toastMessage">Operation completed</span>
+        </div>
+        
+        <!-- Preview Modal -->
+        <div class="modal" id="previewModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalTitle">File Preview</h3>
+                    <button id="closeModal" class="header-btn" aria-label="Close preview">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <img id="imagePreview" class="modal-preview" alt="Image preview" style="display: none;">
+                    <iframe id="pdfPreview" class="modal-preview" style="display: none; width: 100%; height: 500px; border: none;"></iframe>
+                    <video id="videoPreview" class="modal-preview" controls style="display: none; width: 100%; max-height: 500px;"></video>
+                    <audio id="audioPreview" class="modal-preview" controls style="display: none; width: 100%;"></audio>
+                    <pre id="textPreview" class="modal-text" style="display: none;"></pre>
+                    <div id="unsupportedPreview" style="display: none; text-align: center; padding: 40px 0">
+                        <i class="fas fa-file" style="font-size: 5rem; color: var(--accent-primary); margin-bottom: 20px;"></i>
+                        <h3>Preview not available</h3>
+                        <p>This file type cannot be previewed in the browser</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="downloadPreview" class="btn">
+                        <i class="fas fa-download"></i> Download File
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Settings Modal -->
+        <div class="modal" id="settingsModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Settings</h3>
+                    <button id="closeSettings" class="header-btn" aria-label="Close settings">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="settings-form">
+                        <div class="settings-group">
+                            <h4>Appearance</h4>
+                            <div class="settings-option">
+                                <span>Dark Mode</span>
+                                <label class="theme-toggle">
+                                    <input type="checkbox" id="themeToggle">
+                                    <span class="theme-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-group">
+                            <h4>Security</h4>
+                            <div class="settings-option">
+                                <span>Auto-lock after inactivity</span>
+                                <select id="autoLockSelect" class="filter-select">
+                                    <option value="1">1 minute</option>
+                                    <option value="5" selected>5 minutes</option>
+                                    <option value="15">15 minutes</option>
+                                    <option value="30">30 minutes</option>
+                                    <option value="60">1 hour</option>
+                                    <option value="0">Never</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-group">
+                            <h4>About</h4>
+                            <p>Private Vault v1.0.0</p>
+                            <p>All data is stored locally in your browser with client-side encryption.</p>
+                            <p style="color: var(--warning); margin-top: 15px;">
+                                <i class="fas fa-exclamation-triangle"></i> Clearing browser data will delete your vault.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="saveSettings" class="btn">
+                        <i class="fas fa-save"></i> Save Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Confirm Modal -->
+        <div class="modal" id="confirmModal">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h3 id="confirmTitle">Confirm Action</h3>
+                    <button id="closeConfirm" class="header-btn" aria-label="Close confirmation">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p id="confirmMessage">Are you sure you want to perform this action?</p>
+                </div>
+                <div class="modal-footer">
+                    <button id="confirmCancel" class="btn btn-secondary">
+                        Cancel
+                    </button>
+                    <button id="confirmAction" class="btn" style="background: var(--danger)">
+                        Confirm
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Global state
+        const state = {
+            vaultKey: null,
+            files: [],
+            currentFile: null,
+            inactivityTimer: null,
+            inactivityTimeout: 300000, // 5 minutes
+            selectedFiles: new Set(),
+            salt: null,
+            settings: {
+                darkMode: true,
+                autoLock: 5
+            },
+            blobUrls: [] // To track created blob URLs for cleanup
+        };
+
+        // DOM Elements
+        const authView = document.getElementById('authView');
+        const appView = document.getElementById('appView');
+        const passwordInput = document.getElementById('passwordInput');
+        const unlockButton = document.getElementById('unlockButton');
+        const lockButton = document.getElementById('lockButton');
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const uploadButton = document.getElementById('uploadButton');
+        const fileListContainer = document.getElementById('fileListContainer');
+        const searchInput = document.getElementById('searchInput');
+        const sortSelect = document.getElementById('sortSelect');
+        const filterSelect = document.getElementById('filterSelect');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toastMessage');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const storageStatus = document.getElementById('storageStatus');
+        const backupButton = document.getElementById('backupButton');
+        const restoreButton = document.getElementById('restoreButton');
+        const settingsButton = document.getElementById('settingsButton');
+        const previewModal = document.getElementById('previewModal');
+        const closeModal = document.getElementById('closeModal');
+        const imagePreview = document.getElementById('imagePreview');
+        const pdfPreview = document.getElementById('pdfPreview');
+        const videoPreview = document.getElementById('videoPreview');
+        const audioPreview = document.getElementById('audioPreview');
+        const textPreview = document.getElementById('textPreview');
+        const unsupportedPreview = document.getElementById('unsupportedPreview');
+        const downloadPreview = document.getElementById('downloadPreview');
+        const modalTitle = document.getElementById('modalTitle');
+        const settingsModal = document.getElementById('settingsModal');
+        const closeSettings = document.getElementById('closeSettings');
+        const themeToggle = document.getElementById('themeToggle');
+        const autoLockSelect = document.getElementById('autoLockSelect');
+        const saveSettings = document.getElementById('saveSettings');
+        const confirmModal = document.getElementById('confirmModal');
+        const confirmTitle = document.getElementById('confirmTitle');
+        const confirmMessage = document.getElementById('confirmMessage');
+        const confirmCancel = document.getElementById('confirmCancel');
+        const confirmAction = document.getElementById('confirmAction');
+        const closeConfirm = document.getElementById('closeConfirm');
+        const bulkActions = document.getElementById('bulkActions');
+        const selectedCount = document.getElementById('selectedCount');
+        const downloadSelected = document.getElementById('downloadSelected');
+        const deleteSelected = document.getElementById('deleteSelected');
+        const passwordStrength = document.getElementById('passwordStrength');
+
+        // Initialize the application
+        function init() {
+            checkFirstRun();
+            loadSettings();
+            setupEventListeners();
+            resetInactivityTimer();
+            setupPasswordStrengthMeter();
+        }
+
+        // Check if this is the first run
+        function checkFirstRun() {
+            if (!localStorage.getItem('vaultInitialized')) {
+                showToast('Welcome! Set a password to secure your vault.', 'success');
+                localStorage.setItem('vaultInitialized', 'true');
+            }
+        }
+
+        // Load settings from localStorage
+        function loadSettings() {
+            const savedSettings = localStorage.getItem('vaultSettings');
+            if (savedSettings) {
+                state.settings = JSON.parse(savedSettings);
+                applySettings();
+            }
+        }
+
+        // Apply current settings to UI
+        function applySettings() {
+            // Theme
+            document.body.setAttribute('data-theme', state.settings.darkMode ? 'dark' : 'light');
+            themeToggle.checked = state.settings.darkMode;
+            
+            // Auto-lock
+            state.inactivityTimeout = state.settings.autoLock * 60000;
+            autoLockSelect.value = state.settings.autoLock;
+        }
+
+        // Save settings to localStorage
+        function saveSettingsToStorage() {
+            localStorage.setItem('vaultSettings', JSON.stringify(state.settings));
+            showToast('Settings saved', 'success');
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Authentication
+            unlockButton.addEventListener('click', unlockVault);
+            passwordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') unlockVault();
+            });
+            
+            // File handling
+            fileInput.addEventListener('change', handleFileUpload);
+            uploadButton.addEventListener('click', () => fileInput.click());
+            dropZone.addEventListener('click', () => fileInput.click());
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drag-over');
+            });
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('drag-over');
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+                if (e.dataTransfer.files.length) {
+                    handleFileUpload({ target: { files: e.dataTransfer.files } });
+                }
+            });
+            
+            // UI controls
+            lockButton.addEventListener('click', lockVault);
+            searchInput.addEventListener('input', renderFileList);
+            sortSelect.addEventListener('change', renderFileList);
+            filterSelect.addEventListener('change', renderFileList);
+            closeModal.addEventListener('click', closePreviewModal);
+            downloadPreview.addEventListener('click', downloadCurrentFile);
+            backupButton.addEventListener('click', createBackup);
+            restoreButton.addEventListener('click', restoreBackup);
+            
+            // Settings
+            settingsButton.addEventListener('click', () => {
+                settingsModal.classList.add('show');
+            });
+            closeSettings.addEventListener('click', () => {
+                settingsModal.classList.remove('show');
+            });
+            themeToggle.addEventListener('change', (e) => {
+                state.settings.darkMode = e.target.checked;
+                document.body.setAttribute('data-theme', state.settings.darkMode ? 'dark' : 'light');
+            });
+            saveSettings.addEventListener('click', saveSettingsToStorage);
+            autoLockSelect.addEventListener('change', (e) => {
+                state.settings.autoLock = parseInt(e.target.value);
+                state.inactivityTimeout = state.settings.autoLock * 60000;
+            });
+            
+            // Confirmation dialog
+            closeConfirm.addEventListener('click', () => {
+                confirmModal.classList.remove('show');
+            });
+            confirmCancel.addEventListener('click', () => {
+                confirmModal.classList.remove('show');
+            });
+            
+            // Bulk actions
+            downloadSelected.addEventListener('click', downloadSelectedFiles);
+            deleteSelected.addEventListener('click', confirmDeleteSelected);
+            
+            // Activity tracking
+            document.addEventListener('mousemove', resetInactivityTimer);
+            document.addEventListener('keypress', resetInactivityTimer);
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !previewModal.classList.contains('show')) {
+                    lockVault();
+                }
+                
+                if (e.key === 'Delete' && state.selectedFiles.size > 0) {
+                    confirmDeleteSelected();
+                }
+            });
+        }
+
+        // Close preview modal and clean up
+        function closePreviewModal() {
+            // Revoke all blob URLs to free memory
+            state.blobUrls.forEach(url => URL.revokeObjectURL(url));
+            state.blobUrls = [];
+            
+            // Reset all preview elements
+            imagePreview.src = '';
+            pdfPreview.src = '';
+            videoPreview.src = '';
+            audioPreview.src = '';
+            textPreview.textContent = '';
+            
+            previewModal.classList.remove('show');
+        }
+
+        // Setup password strength meter
+        function setupPasswordStrengthMeter() {
+            passwordInput.addEventListener('input', () => {
+                const password = passwordInput.value;
+                let strength = 0;
+                
+                // Length
+                if (password.length > 10) strength += 2;
+                else if (password.length > 6) strength += 1;
+                
+                // Complexity
+                if (/[A-Z]/.test(password)) strength += 1;
+                if (/[0-9]/.test(password)) strength += 1;
+                if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+                
+                // Update UI
+                const strengthPercent = Math.min(100, strength * 25);
+                passwordStrength.style.width = `${strengthPercent}%`;
+                
+                // Color coding
+                if (strengthPercent < 30) {
+                    passwordStrength.style.backgroundColor = 'var(--danger)';
+                } else if (strengthPercent < 70) {
+                    passwordStrength.style.backgroundColor = 'var(--warning)';
+                } else {
+                    passwordStrength.style.backgroundColor = 'var(--success)';
+                }
+            });
+        }
+
+        // Reset inactivity timer
+        function resetInactivityTimer() {
+            if (state.settings.autoLock === 0) return;
+            
+            clearTimeout(state.inactivityTimer);
+            state.inactivityTimer = setTimeout(lockVault, state.inactivityTimeout);
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            toastMessage.textContent = message;
+            toast.className = 'toast';
+            
+            if (type === 'success') {
+                toast.classList.add('success');
+                toast.querySelector('i').className = 'fas fa-check-circle';
+            } else if (type === 'error') {
+                toast.classList.add('error');
+                toast.querySelector('i').className = 'fas fa-exclamation-circle';
+            } else if (type === 'warning') {
+                toast.classList.add('warning');
+                toast.querySelector('i').className = 'fas fa-exclamation-triangle';
+            }
+            
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Show confirmation dialog
+        function showConfirm(title, message, actionCallback) {
+            confirmTitle.textContent = title;
+            confirmMessage.textContent = message;
+            confirmModal.classList.add('show');
+            
+            const handler = () => {
+                actionCallback();
+                confirmModal.classList.remove('show');
+                confirmAction.removeEventListener('click', handler);
+            };
+            
+            confirmAction.addEventListener('click', handler);
+        }
+
+        // Unlock the vault
+        async function unlockVault() {
+            const password = passwordInput.value.trim();
+            
+            if (!password) {
+                showToast('Please enter a password', 'error');
+                return;
+            }
+            
+            try {
+                showToast('Unlocking vault...', 'info');
+                
+                // Generate or retrieve salt
+                let salt = localStorage.getItem('vaultSalt');
+                if (!salt) {
+                    salt = window.crypto.getRandomValues(new Uint8Array(16)).join('');
+                    localStorage.setItem('vaultSalt', salt);
+                }
+                state.salt = salt;
+                
+                // Derive key from password
+                state.vaultKey = await deriveKey(password, salt);
+                
+                // Load files from IndexedDB
+                await loadFiles();
+                
+                // Switch to app view
+                authView.style.display = 'none';
+                appView.style.display = 'flex';
+                
+                // Update storage info
+                updateStorageInfo();
+                
+                showToast('Vault unlocked successfully', 'success');
+            } catch (error) {
+                console.error('Unlock failed:', error);
+                showToast('Invalid password or vault error', 'error');
+            }
+        }
+
+        // Derive encryption key from password
+        async function deriveKey(password, salt) {
+            const encoder = new TextEncoder();
+            const keyMaterial = await window.crypto.subtle.importKey(
+                'raw',
+                encoder.encode(password),
+                { name: 'PBKDF2' },
+                false,
+                ['deriveKey']
+            );
+            
+            return window.crypto.subtle.deriveKey(
+                {
+                    name: 'PBKDF2',
+                    salt: encoder.encode(salt),
+                    iterations: 100000,
+                    hash: 'SHA-256'
+                },
+                keyMaterial,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['encrypt', 'decrypt']
+            );
+        }
+
+        // Lock the vault
+        function lockVault() {
+            // Clear sensitive data
+            state.vaultKey = null;
+            state.files = [];
+            state.selectedFiles.clear();
+            
+            // Clear UI
+            fileListContainer.innerHTML = '';
+            bulkActions.classList.remove('show');
+            
+            // Switch views
+            appView.style.display = 'none';
+            authView.style.display = 'flex';
+            
+            // Reset password field
+            passwordInput.value = '';
+            passwordInput.focus();
+            
+            showToast('Vault locked', 'info');
+        }
+
+        // Handle file upload
+        async function handleFileUpload(event) {
+            const files = Array.from(event.target.files);
+            
+            if (!files.length) return;
+            
+            // Check if vault is locked
+            if (!state.vaultKey) {
+                showToast('Vault is locked', 'error');
+                return;
+            }
+            
+            // Show progress
+            progressContainer.style.display = 'block';
+            progressFill.style.width = '0%';
+            progressText.textContent = 'Preparing files...';
+            
+            try {
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    progressText.textContent = `Encrypting: ${file.name} (${i+1}/${files.length})`;
+                    
+                    // Read file as ArrayBuffer
+                    const arrayBuffer = await readFileAsArrayBuffer(file);
+                    
+                    // Generate IV for encryption
+                    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+                    
+                    // Encrypt file
+                    const encryptedData = await window.crypto.subtle.encrypt(
+                        {
+                            name: 'AES-GCM',
+                            iv: iv
+                        },
+                        state.vaultKey,
+                        arrayBuffer
+                    );
+                    
+                    // Create file object
+                    const fileObj = {
+                        id: Date.now() + i,
+                        name: file.name,
+                        type: file.type,
+                        size: file.size,
+                        date: new Date().toISOString(),
+                        encryptedData: Array.from(new Uint8Array(encryptedData)),
+                        iv: Array.from(iv)
+                    };
+                    
+                    // Add to state
+                    state.files.push(fileObj);
+                    
+                    // Store in IndexedDB
+                    await storeFileInIndexedDB(fileObj);
+                    
+                    // Update progress
+                    progressFill.style.width = `${((i + 1) / files.length) * 100}%`;
+                }
+                
+                // Update UI
+                renderFileList();
+                updateStorageInfo();
+                showToast(`Added ${files.length} file(s) to vault`, 'success');
+            } catch (error) {
+                console.error('Upload failed:', error);
+                showToast('File upload failed', 'error');
+            } finally {
+                progressContainer.style.display = 'none';
+                fileInput.value = '';
+            }
+        }
+
+        // Read file as ArrayBuffer
+        function readFileAsArrayBuffer(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // Store file in IndexedDB
+        async function storeFileInIndexedDB(fileObj) {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('PrivateVaultDB', 1);
+                
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains('files')) {
+                        db.createObjectStore('files', { keyPath: 'id' });
+                    }
+                };
+                
+                request.onsuccess = (event) => {
+                    const db = event.target.result;
+                    const transaction = db.transaction('files', 'readwrite');
+                    const store = transaction.objectStore('files');
+                    
+                    const request = store.put(fileObj);
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = (e) => reject(e.target.error);
+                };
+                
+                request.onerror = (event) => {
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        // Load files from IndexedDB
+        async function loadFiles() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('PrivateVaultDB', 1);
+                
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains('files')) {
+                        db.createObjectStore('files', { keyPath: 'id' });
+                    }
+                };
+                
+                request.onsuccess = (event) => {
+                    const db = event.target.result;
+                    const transaction = db.transaction('files', 'readonly');
+                    const store = transaction.objectStore('files');
+                    const request = store.getAll();
+                    
+                    request.onsuccess = () => {
+                        state.files = request.result || [];
+                        renderFileList();
+                        resolve();
+                    };
+                    
+                    request.onerror = (e) => reject(e.target.error);
+                };
+                
+                request.onerror = (event) => {
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        // Render file list
+        function renderFileList() {
+            if (!state.files.length) {
+                fileListContainer.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1/-1; text-align: center; padding: 40px 0;">
+                        <i class="fas fa-box-open" style="font-size: 3rem; color: var(--text-secondary); margin-bottom: 20px;"></i>
+                        <p>Your vault is empty</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const searchTerm = searchInput.value.toLowerCase();
+            const filterValue = filterSelect.value;
+            let filteredFiles = state.files;
+            
+            // Apply search filter
+            if (searchTerm) {
+                filteredFiles = filteredFiles.filter(file => 
+                    file.name.toLowerCase().includes(searchTerm) || 
+                    file.type.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            // Apply type filter
+            if (filterValue !== 'all') {
+                filteredFiles = filteredFiles.filter(file => {
+                    if (filterValue === 'image') return file.type.startsWith('image/');
+                    if (filterValue === 'document') return (
+                        file.type.includes('pdf') ||
+                        file.type.includes('document') ||
+                        file.type.includes('text') ||
+                        file.type.includes('msword') ||
+                        file.type.includes('presentation') ||
+                        file.type.includes('spreadsheet')
+                    );
+                    if (filterValue === 'archive') return (
+                        file.type.includes('zip') ||
+                        file.type.includes('compressed') ||
+                        file.type.includes('tar') ||
+                        file.type.includes('rar')
+                    );
+                    return true;
+                });
+            }
+            
+            // Apply sorting
+            const sortValue = sortSelect.value;
+            filteredFiles.sort((a, b) => {
+                if (sortValue === 'newest') return new Date(b.date) - new Date(a.date);
+                if (sortValue === 'oldest') return new Date(a.date) - new Date(b.date);
+                if (sortValue === 'name') return a.name.localeCompare(b.name);
+                if (sortValue === 'size') return b.size - a.size;
+                return 0;
+            });
+            
+            // Generate file cards
+            fileListContainer.innerHTML = filteredFiles.map(file => `
+                <div class="file-card ${state.selectedFiles.has(file.id) ? 'selected' : ''}" data-id="${file.id}" role="listitem">
+                    <input type="checkbox" class="file-checkbox" ${state.selectedFiles.has(file.id) ? 'checked' : ''}>
+                    <div class="file-preview">
+                        ${file.type.startsWith('image/') ? 
+                            `<img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%232d2d2d'/%3E%3Ctext x='50%' y='50%' font-size='12' text-anchor='middle' dominant-baseline='middle' fill='%23bb86fc'%3E${file.name.substring(0, 10)}%3C/text%3E%3C/svg%3E" alt="${file.name}">` : 
+                            `<i class="${getFileIcon(file.type)}"></i>`
+                        }
+                        ${file.type ? `<span class="file-tag">${file.type.split('/')[1] || file.type.split('/')[0]}</span>` : ''}
+                    </div>
+                    <div class="file-info">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-meta">
+                            <span>${formatFileSize(file.size)}</span>
+                            <span>${formatDate(file.date)}</span>
+                        </div>
+                        <div class="file-actions">
+                            <button class="file-action-btn preview" data-action="preview" aria-label="Preview ${file.name}">
+                                <i class="fas fa-eye"></i> Preview
+                            </button>
+                            <button class="file-action-btn download" data-action="download" aria-label="Download ${file.name}">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            <button class="file-action-btn delete" data-action="delete" aria-label="Delete ${file.name}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Add event listeners to action buttons
+            document.querySelectorAll('.file-card').forEach(card => {
+                const id = parseInt(card.dataset.id);
+                
+                // Checkbox selection
+                const checkbox = card.querySelector('.file-checkbox');
+                checkbox.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        state.selectedFiles.add(id);
+                        card.classList.add('selected');
+                    } else {
+                        state.selectedFiles.delete(id);
+                        card.classList.remove('selected');
+                    }
+                    updateBulkActions();
+                });
+                
+                // Card click (excluding buttons)
+                card.addEventListener('click', (e) => {
+                    if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
+                        checkbox.checked = !checkbox.checked;
+                        checkbox.dispatchEvent(new Event('change'));
+                    }
+                });
+                
+                // Action buttons
+                card.querySelector('[data-action="preview"]').addEventListener('click', () => previewFile(id));
+                card.querySelector('[data-action="download"]').addEventListener('click', () => downloadFile(id));
+                card.querySelector('[data-action="delete"]').addEventListener('click', () => confirmDeleteFile(id));
+            });
+            
+            updateBulkActions();
+        }
+
+        // Update bulk actions visibility
+        function updateBulkActions() {
+            selectedCount.textContent = `${state.selectedFiles.size} selected`;
+            
+            if (state.selectedFiles.size > 0) {
+                bulkActions.classList.add('show');
+            } else {
+                bulkActions.classList.remove('show');
+            }
+        }
+
+        // Preview a file
+        async function previewFile(id) {
+            const file = state.files.find(f => f.id == id);
+            if (!file) return;
+            
+            state.currentFile = file;
+            modalTitle.textContent = file.name;
+            
+            // Hide all previews
+            document.querySelectorAll('.modal-preview, .modal-text, #unsupportedPreview').forEach(el => {
+                el.style.display = 'none';
+            });
+            
+            try {
+                // Decrypt file for preview
+                const decryptedData = await decryptFile(file);
+                const blob = new Blob([decryptedData], { type: file.type });
+                const blobUrl = URL.createObjectURL(blob);
+                state.blobUrls.push(blobUrl); // Track for cleanup
+                
+                // Show appropriate preview based on file type
+                if (file.type.startsWith('image/')) {
+                    imagePreview.src = blobUrl;
+                    imagePreview.style.display = 'block';
+                } 
+                else if (file.type === 'application/pdf') {
+                    pdfPreview.src = blobUrl;
+                    pdfPreview.style.display = 'block';
+                }
+                else if (file.type.startsWith('video/')) {
+                    videoPreview.src = blobUrl;
+                    videoPreview.style.display = 'block';
+                }
+                else if (file.type.startsWith('audio/')) {
+                    audioPreview.src = blobUrl;
+                    audioPreview.style.display = 'block';
+                }
+                else if (file.type.startsWith('text/') || 
+                         file.type === 'application/json' || 
+                         file.type === 'application/xml') {
+                    const text = await new Response(blob).text();
+                    textPreview.textContent = text;
+                    textPreview.style.display = 'block';
+                }
+                else {
+                    unsupportedPreview.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Preview failed:', error);
+                showToast('Failed to preview file', 'error');
+                unsupportedPreview.style.display = 'block';
+            }
+            
+            previewModal.classList.add('show');
+        }
+
+        // Decrypt file
+        async function decryptFile(file) {
+            if (!state.vaultKey) {
+                throw new Error('Vault is locked');
+            }
+            
+            const encryptedData = new Uint8Array(file.encryptedData).buffer;
+            const iv = new Uint8Array(file.iv);
+            
+            return window.crypto.subtle.decrypt(
+                {
+                    name: 'AES-GCM',
+                    iv: iv
+                },
+                state.vaultKey,
+                encryptedData
+            );
+        }
+
+        // Download a file
+        async function downloadFile(id) {
+            const file = state.files.find(f => f.id == id);
+            if (!file) return;
+            
+            showToast(`Preparing ${file.name} for download...`, 'info');
+            
+            try {
+                // Decrypt file
+                const decryptedData = await decryptFile(file);
+                
+                // Create download link
+                const blob = new Blob([decryptedData], { type: file.type });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = file.name;
+                link.click();
+                
+                // Clean up
+                setTimeout(() => {
+                    URL.revokeObjectURL(url);
+                }, 100);
+                
+                showToast(`${file.name} downloaded`, 'success');
+            } catch (error) {
+                console.error('Download failed:', error);
+                showToast('Failed to download file', 'error');
+            }
+        }
+
+        // Download selected files
+        async function downloadSelectedFiles() {
+            if (state.selectedFiles.size === 0) return;
+            
+            showToast(`Preparing ${state.selectedFiles.size} files for download...`, 'info');
+            
+            // Download each file sequentially
+            const filesToDownload = Array.from(state.selectedFiles)
+                .map(id => state.files.find(f => f.id === id))
+                .filter(Boolean);
+            
+            for (const file of filesToDownload) {
+                await downloadFile(file.id);
+                await new Promise(resolve => setTimeout(resolve, 500)); // Small delay between downloads
+            }
+            
+            // Clear selection
+            state.selectedFiles.clear();
+            renderFileList();
+        }
+
+        // Download the current preview file
+        function downloadCurrentFile() {
+            if (!state.currentFile) return;
+            downloadFile(state.currentFile.id);
+            closePreviewModal();
+        }
+
+        // Confirm file deletion
+        function confirmDeleteFile(id) {
+            const file = state.files.find(f => f.id == id);
+            if (!file) return;
+            
+            showConfirm(
+                'Delete File',
+                `Are you sure you want to permanently delete "${file.name}"? This cannot be undone.`,
+                () => deleteFile(id)
+            );
+        }
+
+        // Confirm bulk delete
+        function confirmDeleteSelected() {
+            if (state.selectedFiles.size === 0) return;
+            
+            showConfirm(
+                'Delete Files',
+                `Are you sure you want to permanently delete ${state.selectedFiles.size} selected files? This cannot be undone.`,
+                deleteSelectedFiles
+            );
+        }
+
+        // Delete a file
+        async function deleteFile(id) {
+            // Remove from state
+            state.files = state.files.filter(f => f.id != id);
+            state.selectedFiles.delete(id);
+            
+            // Remove from IndexedDB
+            await deleteFileFromIndexedDB(id);
+            
+            // Update UI
+            renderFileList();
+            updateStorageInfo();
+            showToast('File deleted', 'success');
+        }
+
+        // Delete selected files
+        async function deleteSelectedFiles() {
+            const filesToDelete = Array.from(state.selectedFiles);
+            
+            for (const id of filesToDelete) {
+                await deleteFile(id);
+            }
+            
+            state.selectedFiles.clear();
+        }
+
+        // Delete file from IndexedDB
+        async function deleteFileFromIndexedDB(id) {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('PrivateVaultDB', 1);
+                
+                request.onsuccess = (event) => {
+                    const db = event.target.result;
+                    const transaction = db.transaction('files', 'readwrite');
+                    const store = transaction.objectStore('files');
+                    
+                    const request = store.delete(id);
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = (e) => reject(e.target.error);
+                };
+                
+                request.onerror = (event) => {
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        // Create a backup
+        async function createBackup() {
+            if (!state.files.length) {
+                showToast('Vault is empty. Nothing to backup.', 'warning');
+                return;
+            }
+            
+            showToast('Creating encrypted backup...', 'info');
+            
+            try {
+                // Prepare backup data
+                const backupData = {
+                    version: 1,
+                    salt: state.salt,
+                    files: state.files,
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Convert to JSON and encrypt
+                const jsonStr = JSON.stringify(backupData);
+                const encoder = new TextEncoder();
+                const data = encoder.encode(jsonStr);
+                
+                const iv = window.crypto.getRandomValues(new Uint8Array(12));
+                const encryptedData = await window.crypto.subtle.encrypt(
+                    {
+                        name: 'AES-GCM',
+                        iv: iv
+                    },
+                    state.vaultKey,
+                    data
+                );
+                
+                // Create backup file
+                const backupBlob = new Blob(
+                    [JSON.stringify({
+                        iv: Array.from(iv),
+                        data: Array.from(new Uint8Array(encryptedData))
+                    })], 
+                    { type: 'application/json' }
+                );
+                
+                // Offer download
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(backupBlob);
+                link.download = `vault-backup-${new Date().toISOString().slice(0, 10)}.pvault`;
+                link.click();
+                
+                showToast('Backup created successfully', 'success');
+            } catch (error) {
+                console.error('Backup failed:', error);
+                showToast('Backup creation failed', 'error');
+            }
+        }
+
+        // Restore from backup
+        async function restoreBackup() {
+            showConfirm(
+                'Restore Backup',
+                'Restoring a backup will replace all current files. Continue?',
+                async () => {
+                    // Create file input for backup
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = '.pvault';
+                    
+                    input.onchange = async (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        
+                        showToast('Restoring backup...', 'info');
+                        
+                        try {
+                            // Read backup file
+                            const jsonStr = await readFileAsText(file);
+                            const backup = JSON.parse(jsonStr);
+                            
+                            // Decrypt backup
+                            const iv = new Uint8Array(backup.iv);
+                            const encryptedData = new Uint8Array(backup.data).buffer;
+                            
+                            const decryptedData = await window.crypto.subtle.decrypt(
+                                {
+                                    name: 'AES-GCM',
+                                    iv: iv
+                                },
+                                state.vaultKey,
+                                encryptedData
+                            );
+                            
+                            const decoder = new TextDecoder();
+                            const decryptedStr = decoder.decode(decryptedData);
+                            const backupData = JSON.parse(decryptedStr);
+                            
+                            // Verify backup
+                            if (!backupData.files || !Array.isArray(backupData.files)) {
+                                throw new Error('Invalid backup format');
+                            }
+                            
+                            // Clear existing files
+                            await clearIndexedDB();
+                            
+                            // Restore files
+                            state.files = backupData.files;
+                            for (const file of backupData.files) {
+                                await storeFileInIndexedDB(file);
+                            }
+                            
+                            showToast('Backup restored successfully', 'success');
+                            
+                            // Reload files
+                            await loadFiles();
+                            updateStorageInfo();
+                        } catch (error) {
+                            console.error('Restore failed:', error);
+                            showToast('Backup restore failed. Invalid password or corrupted file.', 'error');
+                        }
+                    };
+                    
+                    input.click();
+                }
+            );
+        }
+
+        // Read file as text
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsText(file);
+            });
+        }
+
+        // Clear IndexedDB
+        async function clearIndexedDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('PrivateVaultDB', 1);
+                
+                request.onsuccess = (event) => {
+                    const db = event.target.result;
+                    const transaction = db.transaction('files', 'readwrite');
+                    const store = transaction.objectStore('files');
+                    
+                    const request = store.clear();
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = (e) => reject(e.target.error);
+                };
+                
+                request.onerror = (event) => {
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        // Update storage information
+        function updateStorageInfo() {
+            const totalSize = state.files.reduce((sum, file) => sum + file.size, 0);
+            const sizeInMB = (totalSize / (1024 * 1024)).toFixed(2);
+            storageStatus.textContent = `${sizeInMB} MB`;
+        }
+
+        // Helper functions
+        function getFileIcon(type) {
+            if (type.startsWith('image/')) return 'fas fa-file-image';
+            if (type.startsWith('audio/')) return 'fas fa-file-audio';
+            if (type.startsWith('video/')) return 'fas fa-file-video';
+            if (type.includes('pdf')) return 'fas fa-file-pdf';
+            if (type.includes('zip') || type.includes('compressed')) return 'fas fa-file-archive';
+            if (type.includes('word')) return 'fas fa-file-word';
+            if (type.includes('excel')) return 'fas fa-file-excel';
+            if (type.includes('powerpoint')) return 'fas fa-file-powerpoint';
+            if (type.startsWith('text/')) return 'fas fa-file-alt';
+            return 'fas fa-file';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function formatDate(isoString) {
+            const date = new Date(isoString);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Initialize the app
+        init();
+    </script>
+</body>
+</html>
